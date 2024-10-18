@@ -19,6 +19,8 @@ However, John Gossman, one of the original architects, has critiqued MVVM, stati
 ### Components of MVVM pattern
 The MVVM pattern consists of four key components: the Model, View, View Model, and Binder.
 
+![App Platorm](https://upload.wikimedia.org/wikipedia/commons/d/d5/MVVMPattern.svg)
+
 ### View
 
 #### Traditional Definition
