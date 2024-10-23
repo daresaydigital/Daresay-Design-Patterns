@@ -31,17 +31,6 @@ Similar to MVC and MVP, the view defines the layout and appearance of what the u
 
 In SwiftUI, the view is a declarative representation of the user interface, built using Swift. Views describe how the UI should appear, and SwiftUI manages updates automatically when the data changes. Using SwiftUI’s declarative syntax, components like Text, Button, and List are defined in a hierarchical structure. One key feature is that SwiftUI automatically re-renders the view when there’s a change in data or state, minimizing the need for manual updates like in UIKit. The views bind directly to data in the view model through property wrappers like:
 
-```
-@StateObject: For owning view models.
-
-@ObservedObject: For passing view models.
-
-@Binding: For two-way bindings.
-
-@State: For local, view-specific state.
-```
-  
-
 ### View Model
 
 #### Traditional Definition
@@ -53,35 +42,10 @@ This is an abstraction of the view, exposing public properties and commands. Unl
 The view model in Swift (SwiftUI) serves as an intermediary between the model and the view. It is often a class that conforms to ObservableObject, allowing the view to observe changes in the data. In SwiftUI, you use property wrappers like @Published within the view model to notify the view of changes, triggering re-rendering automatically. The view model is responsible for exposing the data in a format that the view can easily display and handles any business logic related to user interactions, such as:
 
 - Transforming data for the view: Formatting data in a way that’s easy for the view to display. For instance:  
-  
-```
-private func updateFormattedData(from weather: WeatherData) {
-	formattedTemperature = String(
-		format: "%.1f°C (%.1f°F)",
-		weather.temperature,
-		weather.temperatureInFahrenheit()
-	)
-
-	weatherDescription = """
-		Condition: \(weather.condition.rawValue.capitalized)
-		Humidity: \(weather.humidity)%
-		Wind Speed: \(weather.windSpeed) km/h
-	"""
-}
-```
-- Filtering Data for the View:
-```
-@Published var filteredUsers: [User] = []
-
-func filterUsers(olderThan age: Int) {
-	filteredUsers = users.filter { $0.age > age }
-}
-```
+- Filtering Data for the View
 - Handling User Input: Managing user actions (such as button taps or form submissions) and coordinating the necessary operations between the view and the model.
 - State management: Keeping track of the UI's current state (e.g., whether a button is enabled or what the selected item in a list is).
 - Error handling: Communicating any issues (like validation failures) back to the UI in a user-friendly way.
-
-  
 
 ### Model
 
@@ -90,68 +54,19 @@ The model represents the real state of the content. It can either refer to the d
 
 #### Modern SwiftUI Implementation
 
-In Swift (SwiftUI), the model typically represents the underlying data or business logic. It could be a struct, class, or enum that encapsulates your app's state, usually adhering to the Codable and Identifiable protocol if you're working with external data like APIs. The model is responsible for the actual business logic and data handling, and it should be kept separate from the view. In practice, your model might communicate with a backend service or handle local data persistence using frameworks like CoreData or CloudKit.
-
-The model is responsible for the core business logic that is tied directly to the data and its management. This includes things like:
-
-  
+In Swift (SwiftUI), the model typically represents the underlying data or business logic. It could be a struct, class, or enum that encapsulates your app's state, usually adhering to the Codable and Identifiable protocol if you're working with external data like APIs. The model is responsible for the actual business logic and data handling, and it should be kept separate from the view. This includes:
 
 - Raw Data Properties (Business Entities):
 These are the fundamental properties that represent your business data in its purest form. They should be primitive types or simple structs that hold the core information without any presentation logic. These properties are the "source of truth" for your data.
-```
-struct Weather {
-	let temperature: Double // Basic numerical value
-	let humidity: Int // Simple percentage
-	let windSpeed: Double // Raw measurement
-	let pressure: Double // Basic atmospheric pressure
-	let timestamp: Date // Time of measurement
-}
-```
-
 - Domain-Specific Types/Enums:
 These are custom types that represent concepts specific to your business domain. They help make your code more type-safe and self-documenting by encoding business rules and valid states directly into the type system. Instead of using strings or numbers that could contain invalid values, you create specific types that can only represent valid domain concepts.
-```
-struct Weather {
-	enum WeatherCondition: String {
-		case sunny, cloudy, rainy, snowy
-	}
-
-	let condition: WeatherCondition
-}
-```
-
 - Business validation rules: 
 Ensuring that data conforms to business rules (e.g., valid temperature ranges).
 These are the rules that ensure your data meets business requirements. They protect the integrity of your model by enforcing valid ranges, relationships, and states. These rules should reflect real-world constraints and business requirements.
-```
-private static let validTemperatureRange = -100.0...150.0
-private static let validHumidityRange = 0...100
-private static let validWindSpeedRange = 0.0...500.0
-```
 - Business logic/Calculations: 
 Any logic that governs how the data should behave (e.g., Celsius to Fahrenheit conversion).
 These are computations and transformations that reflect business rules or natural phenomena. They should only deal with business concepts, not presentation. These calculations are often derived from raw properties but represent meaningful business concepts.
-
-  
-```
-var isFreezing: Bool {
-	temperature <= 0
-}
-
-var isPrecipitating: Bool {
-	[.rainy, .snowy, .thunderstorm].contains(condition)
-}
-
-var isExtremeWeather: Bool {
-	temperature > 35 || temperature < -10 || windSpeed > 70
-}
-
-func temperatureInFahrenheit() -> Double {
-	(temperature * 9/5) + 32
-}
-```
 - Should be UI-independent and framework-independent
-
 
 ### Binder
 
@@ -164,71 +79,13 @@ In SwiftUI, the concept of a binder is implicit through the use of property wrap
 For advanced data flows:
 - Combine framework
 
-  
-
 ### Additional Modern Components
 #### Service Layer
 The Service layer acts as an intermediary between the view models and external data sources or APIs. It handles the business operations and complex workflows that span multiple repositories or external services. This layer abstracts away the complexity of coordinating multiple data sources and provides a clean interface for the view models to consume.
 
-```
-protocol WeatherServiceProtocol {
-	func fetchCurrentWeather(for location: Location) async throws -> Weather
-	func fetchForecast(days: Int) async throws -> [Weather]
-}
-
-class WeatherService: WeatherServiceProtocol {
-	private let weatherRepository: WeatherRepositoryProtocol
-	private let locationService: LocationServiceProtocol
-	
-	init(
-		weatherRepository: WeatherRepositoryProtocol,
-		locationService: LocationServiceProtocol
-	) {
-		self.weatherRepository = weatherRepository
-		self.locationService = locationService
-	}
-
-	func fetchCurrentWeather(for location: Location) async throws -> Weather {
-		// Coordinate between repositories and transform data
-		let coordinates = try await locationService.getCoordinates(for: location)
-		let weatherData = try await weatherRepository.fetchWeather(lat: coordinates.lat,
-		lon: coordinates.lon)
-		return weatherData
-	}
-}
-```
 #### Repository Layer
 The Repository layer provides an abstraction over data sources, whether they're local (Core Data, UserDefaults) or remote (REST APIs, GraphQL). It handles the specifics of data persistence and retrieval, providing a clean interface that shields the rest of the application from the implementation details of data storage.
 
-```
-protocol WeatherRepositoryProtocol {
-	func fetchWeather(lat: Double, lon: Double) async throws -> Weather
-	func cacheWeather(_ weather: Weather) async throws
-	func getCachedWeather() async throws -> Weather?
-}
-
-class WeatherRepository: WeatherRepositoryProtocol {
-	private let apiClient: APIClient
-	private let cache: CacheManager
-
-	init(apiClient: APIClient, cache: CacheManager) {
-		self.apiClient = apiClient
-		self.cache = cache
-	}
-
-	func fetchWeather(lat: Double, lon: Double) async throws -> Weather {
-		// Check cache first
-		if let cached = try await getCachedWeather() {
-			return cached
-		}
-
-		// Fetch from API if not cached
-		let weather = try await apiClient.fetch(endpoint: .weather(lat: lat, lon: lon))
-		try await cacheWeather(weather)
-		return weather
-	}
-}
-```
 #### Coordinator/Router Layer
 The Coordinator pattern handles navigation flow and screen transitions in the application. It removes navigation logic from view models and provides a centralized place to manage the app's flow.
 
